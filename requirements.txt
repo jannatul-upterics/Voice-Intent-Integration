@@ -1,0 +1,10 @@
+# Core Integration & Environment Dependencies
+python-dotenv>=1.0.0
+flask>=2.0.0
+streamlit>=1.20.0
+
+# Subsystem Dependencies:
+# This orchestration layer delegates speech processing and intent classification
+# to two independent sibling projects. Their dependencies are installed in their respective folders:
+#   - Voice Processing: ../Audio-Conversation-Voice-Response/requirements.txt (groq, edge-tts, httpx, etc.)
+#   - Intent Classification: ../Customer-Intent-Classification/requirements.txt (groq, pydantic, langchain, etc.)

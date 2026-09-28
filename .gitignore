@@ -1,0 +1,39 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Environment and Secrets
+.env
+*.key
+*.token
+
+# Generated Audio Responses
+responses/*.mp3
+!responses/response_mock.mp3
+!responses/.gitkeep
+!responses/README.md
+
+# Generated Intent JSON Outputs
+intents/*.json
+!intents/.gitkeep
+
+# Audio Uploads & Temporary Media
+audio/uploads/*
+!audio/uploads/.gitkeep
+!audio/test_cases/
+!audio/sample_customer_audio.wav
+!audio/.gitkeep
+!audio/README.md
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

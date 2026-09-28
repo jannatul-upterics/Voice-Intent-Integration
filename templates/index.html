@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Voice Assistant</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --accent-success: #10b981;
+      --accent-warn: #f59e0b;
+      --accent-danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 70%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 {
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #e0f2fe 0%, #38bdf8 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* Primary Pipeline Flow Banner */
+    .pipeline-badge {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 9999px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      backdrop-filter: blur(8px);
+      margin: 0 auto;
+      max-width: fit-content;
+    }
+
+    .pipeline-badge span.step {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .pipeline-badge span.arrow {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Main Card */
+    .card {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #f1f5f9;
+    }
+
+    /* Input Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: #0f172a;
+      padding: 0.35rem;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.7rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn.active {
+      background: #1e293b;
+      color: var(--accent);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Record Section */
+    .record-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      gap: 1.25rem;
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .record-btn {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      border: 4px solid rgba(239, 68, 68, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+    }
+
+    .record-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .record-btn.recording {
+      animation: pulse-ring 1.5s infinite;
+      background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .record-btn svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+
+    .record-timer {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f8fafc;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Upload Drop Zone */
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.4);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .dropzone svg {
+      width: 44px;
+      height: 44px;
+      stroke: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .dropzone p {
+      color: #cbd5e1;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .dropzone small {
+      color: var(--text-muted);
+    }
+
+    /* Samples Select */
+    .sample-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .sample-chip {
+      padding: 0.85rem 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .sample-chip:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .sample-chip.selected {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.15);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .sample-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #f8fafc;
+      margin-bottom: 0.2rem;
+    }
+
+    .sample-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* File Status Indicator */
+    .file-status {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      padding: 0.8rem 1.2rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
+
+    .file-status.show {
+      display: flex;
+    }
+
+    .file-status span.name {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-status audio {
+      height: 32px;
+      max-width: 220px;
+    }
+
+    /* Action Button */
+    .action-btn {
+      width: 100%;
+      padding: 1.1rem;
+      margin-top: 1.25rem;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 20px -6px rgba(2, 132, 199, 0.6);
+    }
+
+    .action-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      transform: translateY(-1px);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results Section */
+    .result-card {
+      display: none;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    .result-card.show {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .response-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .response-player-box {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .response-player-box audio {
+      width: 100%;
+      height: 48px;
+    }
+
+    /* Collapsible Debug Accordion */
+    details.debug-box {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    details.debug-box summary {
+      padding: 0.9rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    details.debug-box summary:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .debug-content {
+      padding: 1.2rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .debug-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .debug-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .debug-value {
+      background: #1e293b;
+      padding: 0.6rem 0.85rem;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+    }
+
+    .slot-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .slot-tag {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Error Alert */
+    .alert-error {
+      display: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      margin-top: 1rem;
+    }
+
+    .alert-error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>The Voice Assistant</h1>
+      <p>Autonomous Restaurant Voice Reservation & Inquiry System</p>
+    </header>
+
+    <!-- Pipeline Flow Visualizer -->
+    <div class="pipeline-badge">
+      <span class="step">🎙️ Customer Audio</span>
+      <span class="arrow">➔</span>
+      <span class="step">⚙️ Integration Pipeline</span>
+      <span class="arrow">➔</span>
+      <span class="step">🔊 Spoken Audio Response</span>
+    </div>
+
+    <!-- Main Card: Audio Input Only -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+        <span>Customer Audio Input</span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('record')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          </svg>
+          Record Voice
+        </button>
+        <button class="tab-btn" onclick="switchTab('upload')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Upload Audio File
+        </button>
+        <button class="tab-btn" onclick="switchTab('samples')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Customer Scenarios
+        </button>
+      </div>
+
+      <!-- Tab 1: Record -->
+      <div id="tab-record" class="tab-content active">
+        <div class="record-box">
+          <button id="record-btn" class="record-btn" onclick="toggleRecording()" title="Click to record customer voice">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+          </button>
+          <div id="record-timer" class="record-timer">00:00</div>
+          <p id="record-instructions" style="color: var(--text-muted); font-size: 0.9rem;">
+            Click microphone to start recording your voice request.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 2: Upload -->
+      <div id="tab-upload" class="tab-content">
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <p>Click or drag & drop customer audio here</p>
+          <small>Supported formats: .wav, .mp3, .m4a, .ogg, .flac</small>
+          <input type="file" id="file-input" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" style="display:none" onchange="handleFileSelect(event)">
+        </div>
+      </div>
+
+      <!-- Tab 3: Customer Scenarios -->
+      <div id="tab-samples" class="tab-content">
+        <div class="sample-grid" id="sample-grid">
+          <div class="sample-chip" onclick="selectSample('01_greeting.mp3', this)">
+            <div class="sample-title">1. Greeting</div>
+            <div class="sample-desc">"Hello, good evening..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('02_new_booking.mp3', this)">
+            <div class="sample-title">2. New Booking Request</div>
+            <div class="sample-desc">"Table for four this Friday at 8 PM..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('03_booking_guest_count.mp3', this)">
+            <div class="sample-title">3. Booking (Guest Count)</div>
+            <div class="sample-desc">"Table for six guests please..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('04_booking_date_time.mp3', this)">
+            <div class="sample-title">4. Booking (Date & Time)</div>
+            <div class="sample-desc">"Tomorrow evening at 7:30 PM..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('05_inquiry.mp3', this)">
+            <div class="sample-title">5. Dining Inquiry</div>
+            <div class="sample-desc">"Vegetarian & gluten-free options..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('06_modification.mp3', this)">
+            <div class="sample-title">6. Modification Request</div>
+            <div class="sample-desc">"Change booking to 6 on Saturday..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('07_cancellation.mp3', this)">
+            <div class="sample-title">7. Cancellation Request</div>
+            <div class="sample-desc">"Cancel reservation for this Friday..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('08_incomplete_request.mp3', this)">
+            <div class="sample-title">8. Incomplete Request</div>
+            <div class="sample-desc">"I need a table for tonight please..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('09_unclear_request.mp3', this)">
+            <div class="sample-title">9. Unclear Speech</div>
+            <div class="sample-desc">"Thinking about coming by later..."</div>
+          </div>
+          <div class="sample-chip" onclick="selectSample('10_unsupported_request.mp3', this)">
+            <div class="sample-title">10. Unsupported Request</div>
+            <div class="sample-desc">"Can you book me a taxi to the airport?..."</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Preview Bar -->
+      <div id="file-status" class="file-status">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <span id="file-name" class="name">Ready to process</span>
+        <audio id="input-audio-preview" controls></audio>
+      </div>
+
+      <!-- Primary Action -->
+      <button id="process-btn" class="action-btn" onclick="processPipeline()" disabled>
+        <div id="btn-spinner" class="spinner"></div>
+        <span id="btn-text">Process Customer Audio</span>
+      </button>
+
+      <!-- Error Alert -->
+      <div id="alert-error" class="alert-error"></div>
+    </div>
+
+    <!-- Output Section: Spoken Audio Response Player -->
+    <div id="result-card" class="result-card">
+      <div class="response-header">
+        <div class="card-title" style="margin-bottom:0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <span>Spoken Audio Response</span>
+        </div>
+        <span id="intent-badge" class="response-badge">booking</span>
+      </div>
+
+      <!-- Prominent HTML5 Audio Player -->
+      <div class="response-player-box">
+        <audio id="response-audio-player" controls autoplay></audio>
+        <p id="response-text-preview" style="color: #cbd5e1; font-size: 1rem; font-style: italic; text-align: center;">
+          "Your response will play automatically."
+        </p>
+      </div>
+
+      <!-- Collapsible Intermediate Debug Details -->
+      <details class="debug-box">
+        <summary>
+          <span>🔍 Intermediate Pipeline Details (Debug / Diagnostics)</span>
+          <span>▼</span>
+        </summary>
+        <div class="debug-content">
+          <div class="debug-row">
+            <span class="debug-label">1. Transcribed Customer Speech</span>
+            <div id="debug-transcript" class="debug-value">-</div>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">2. Classified Intent</span>
+            <div id="debug-intent" class="debug-value">-</div>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">3. Extracted Reservation Information</span>
+            <div id="debug-entities" class="slot-tags">-</div>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">4. Generated Customer Response Text</span>
+            <div id="debug-response-text" class="debug-value">-</div>
+          </div>
+          <div class="debug-row">
+            <span class="debug-label">5. Audio Response Output File</span>
+            <div id="debug-audio-file" class="debug-value">-</div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    let currentAudioBlob = null;
+    let currentFileName = null;
+    let selectedSample = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordInterval = null;
+    let recordSeconds = 0;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // Microphone Recording
+    async function toggleRecording() {
+      const btn = document.getElementById('record-btn');
+      const timer = document.getElementById('record-timer');
+      const instr = document.getElementById('record-instructions');
+
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        // Stop recording
+        mediaRecorder.stop();
+        btn.classList.remove('recording');
+        clearInterval(recordInterval);
+        instr.textContent = 'Recording captured. Click Process Customer Audio to proceed.';
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          currentAudioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          currentFileName = 'recorded_customer_voice.wav';
+          selectedSample = null;
+
+          const audioUrl = URL.createObjectURL(currentAudioBlob);
+          showFileStatus(currentFileName, audioUrl);
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        mediaRecorder.start();
+        btn.classList.add('recording');
+        recordSeconds = 0;
+        timer.textContent = '00:00';
+        instr.textContent = 'Listening... Speak your restaurant request clearly.';
+
+        recordInterval = setInterval(() => {
+          recordSeconds++;
+          const mins = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+          const secs = String(recordSeconds % 60).padStart(2, '0');
+          timer.textContent = `${mins}:${secs}`;
+        }, 1000);
+
+      } catch (err) {
+        showError('Microphone access was denied or is unavailable. Please grant microphone permissions or use file upload.');
+      }
+    }
+
+    // Drag and Drop & File Upload
+    const dropzone = document.getElementById('dropzone');
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      }, false);
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      }, false);
+    });
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length) {
+        handleAudioFile(files[0]);
+      }
+    });
+
+    function handleFileSelect(event) {
+      if (event.target.files.length) {
+        handleAudioFile(event.target.files[0]);
+      }
+    }
+
+    function handleAudioFile(file) {
+      currentAudioBlob = file;
+      currentFileName = file.name;
+      selectedSample = null;
+      document.querySelectorAll('.sample-chip').forEach(c => c.classList.remove('selected'));
+      showFileStatus(file.name, URL.createObjectURL(file));
+    }
+
+    function selectSample(filename, chipEl) {
+      document.querySelectorAll('.sample-chip').forEach(c => c.classList.remove('selected'));
+      chipEl.classList.add('selected');
+      selectedSample = filename;
+      currentAudioBlob = null;
+      currentFileName = filename;
+      showFileStatus(filename, `/api/audio/${filename}?sample=true`);
+    }
+
+    function showFileStatus(name, audioUrl) {
+      document.getElementById('file-name').textContent = name;
+      const preview = document.getElementById('input-audio-preview');
+      preview.src = audioUrl;
+      document.getElementById('file-status').classList.add('show');
+      document.getElementById('process-btn').disabled = false;
+      document.getElementById('alert-error').classList.remove('show');
+    }
+
+    function showError(msg) {
+      const alertEl = document.getElementById('alert-error');
+      alertEl.textContent = msg;
+      alertEl.classList.add('show');
+    }
+
+    async function processPipeline() {
+      const btn = document.getElementById('process-btn');
+      const btnText = document.getElementById('btn-text');
+      const spinner = document.getElementById('btn-spinner');
+      const alertEl = document.getElementById('alert-error');
+
+      btn.disabled = true;
+      spinner.style.display = 'block';
+      btnText.textContent = 'Processing Pipeline...';
+      alertEl.classList.remove('show');
+
+      try {
+        let resp;
+        if (selectedSample) {
+          resp = await fetch('/api/process_sample', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sample_filename: selectedSample })
+          });
+        } else if (currentAudioBlob) {
+          const formData = new FormData();
+          formData.append('audio', currentAudioBlob, currentFileName);
+          resp = await fetch('/api/process_audio', {
+            method: 'POST',
+            body: formData
+          });
+        } else {
+          showError('Please record or select an audio file first.');
+          return;
+        }
+
+        const data = await resp.json();
+        if (!resp.ok || data.status === 'error') {
+          showError(data.error || data.customer_facing_message || 'Pipeline processing failed.');
+          return;
+        }
+
+        // Render Results
+        renderPipelineResult(data);
+
+      } catch (err) {
+        showError('Network error connecting to voice integration service: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.textContent = 'Process Customer Audio';
+      }
+    }
+
+    function renderPipelineResult(data) {
+      const resultCard = document.getElementById('result-card');
+      resultCard.classList.add('show');
+
+      // 1. Audio Player
+      const audioPlayer = document.getElementById('response-audio-player');
+      if (data.audio_output_url) {
+        audioPlayer.src = data.audio_output_url + '?t=' + new Date().getTime();
+        audioPlayer.play().catch(() => {});
+      }
+
+      // 2. Response preview
+      document.getElementById('response-text-preview').textContent = `"${data.response_text}"`;
+      document.getElementById('intent-badge').textContent = (data.intent_classification?.intent || 'detected').toUpperCase();
+
+      // 3. Debug Details
+      document.getElementById('debug-transcript').textContent = data.customer_text || '(Silence / None)';
+      document.getElementById('debug-intent').textContent = data.intent_classification?.intent || 'unknown';
+      document.getElementById('debug-response-text').textContent = data.response_text || '-';
+      document.getElementById('debug-audio-file').textContent = data.audio_output_filename || '-';
+
+      // Entities
+      const entitiesDiv = document.getElementById('debug-entities');
+      entitiesDiv.innerHTML = '';
+      const intentData = data.intent_classification || {};
+      const interestingKeys = ['party_size', 'date', 'time', 'food_preference', 'seating_preference', 'celebration_requirement'];
+      let found = false;
+      for (const k of interestingKeys) {
+        const val = intentData[k];
+        if (val) {
+          found = true;
+          const tag = document.createElement('div');
+          tag.className = 'slot-tag';
+          tag.textContent = `${k.replace('_', ' ')}: ${typeof val === 'object' ? JSON.stringify(val) : val}`;
+          entitiesDiv.appendChild(tag);
+        }
+      }
+      if (!found) {
+        entitiesDiv.textContent = 'None detected';
+      }
+
+      resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  </script>
+</body>
+</html>
