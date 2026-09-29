@@ -213,11 +213,13 @@ if process_clicked and audio_file_to_process:
         )
 
     # -----------------------------------------------------------------------
-    # Section 3: Primary User Experience - Audio Response Playback
+    # Section 3: Processing Results (Audio Response, Transcript & Intent JSON)
     # -----------------------------------------------------------------------
     st.divider()
-    st.subheader("2. Spoken Audio Response")
+    st.subheader("2. Processing Results")
 
+    # 1. Spoken Audio Response
+    st.markdown("#### 🔊 Spoken Audio Response")
     audio_output = result.get("audio_output")
     if audio_output and Path(audio_output).exists() and Path(audio_output).stat().st_size > 0:
         p = Path(audio_output)
@@ -238,10 +240,11 @@ if process_clicked and audio_file_to_process:
         )
 
         st.download_button(
-            label="⬇️ Download Response Audio (MP3)",
+            label="⬇️ Download Audio (.mp3)",
             data=audio_bytes,
             file_name=p.name,
             mime="audio/mpeg",
+            key="download_audio_btn",
         )
     else:
         st.error(
@@ -249,46 +252,45 @@ if process_clicked and audio_file_to_process:
             or "Failed to generate response audio. Please check the logs."
         )
 
-    # -----------------------------------------------------------------------
-    # Section 4: Intermediate Pipeline Details (Optional / Debug Expander)
-    # -----------------------------------------------------------------------
-    with st.expander("🔍 Intermediate Pipeline Details (Debug / Diagnostics)", expanded=False):
+    # 2. Transcribed Customer Speech
+    st.markdown("#### 🎙️ Transcribed Customer Speech")
+    customer_transcript = result.get("customer_text") or "(No speech recognized / silence)"
+    st.info(customer_transcript)
+
+    # 3. Intent Classification Result (JSON) & Download
+    st.markdown("#### 📋 Intent Classification Result (JSON)")
+    intent_data = result.get("intent_classification") or {}
+    st.json(intent_data)
+
+    json_out = result.get("json_output")
+    if json_out and Path(json_out).exists():
+        with open(json_out, "r", encoding="utf-8") as jf:
+            json_raw_data = jf.read()
+        st.download_button(
+            label="⬇️ Download JSON",
+            data=json_raw_data,
+            file_name="intent_result.json",
+            mime="application/json",
+            key="download_json_btn",
+        )
+
+    # 4. Collapsible Intermediate Diagnostics
+    with st.expander("🔍 Intermediate Diagnostics & Reservation Details", expanded=False):
         col1, col2 = st.columns(2)
-
         with col1:
-            st.markdown("**1. Transcribed Customer Speech:**")
-            st.code(result.get("customer_text") or "(No speech recognized)", language="text")
-
-            intent_data = result.get("intent_classification") or {}
-            detected_intent = intent_data.get("intent", "unknown")
-            st.markdown(f"**2. Detected Intent:** `{detected_intent}`")
-
+            st.markdown(f"**Detected Intent:** `{intent_data.get('intent', 'unknown')}`")
+            st.markdown(f"**Status:** `{result.get('status')}`")
+            st.markdown(f"**TTS Failed:** `{result.get('tts_failed', False)}`")
         with col2:
-            st.markdown("**3. Extracted Information:**")
-            slots = {}
-            for k in ["party_size", "date", "time", "food_preference", "seating_preference", "celebration_requirement"]:
-                v = intent_data.get(k)
-                if v:
-                    slots[k] = v
-            if slots:
-                st.json(slots)
-            else:
-                st.caption("No specific reservation entities extracted.")
-
-        st.markdown("**4. Generated Customer Response Text:**")
-        st.text_area("Response Text", value=result.get("response_text", ""), height=80, disabled=True)
-
-        json_out = result.get("json_output")
-        if json_out and Path(json_out).exists():
-            st.markdown(f"**5. Intent Classification JSON Output:** `{Path(json_out).name}`")
-            with open(json_out, "r", encoding="utf-8") as jf:
-                json_raw_data = jf.read()
-            st.download_button(
-                label="⬇️ Download Intent JSON",
-                data=json_raw_data,
-                file_name=Path(json_out).name,
-                mime="application/json",
-            )
-
-        st.caption(f"Status: `{result.get('status')}` | Intent JSON: `{json_out}` | Audio Output: `{audio_output}`")
+            st.markdown(f"**Intent JSON File:** `{Path(json_out).name if json_out else 'None'}`")
+            st.markdown(f"**Audio File:** `{Path(audio_output).name if audio_output else 'None'}`")
+        
+        slots = {}
+        for k in ["party_size", "date", "time", "food_preference", "seating_preference", "celebration_requirement"]:
+            v = intent_data.get(k)
+            if v:
+                slots[k] = v
+        if slots:
+            st.markdown("**Extracted Reservation Slots:**")
+            st.json(slots)
 

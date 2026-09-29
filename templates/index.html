@@ -385,7 +385,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border-color);
     }
 
     .response-badge {
@@ -400,21 +402,173 @@
       letter-spacing: 0.05em;
     }
 
-    .response-player-box {
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.5rem;
+    /* Results section container & blocks */
+    .result-section {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      align-items: center;
-      margin-bottom: 1.5rem;
+      gap: 1.5rem;
     }
 
-    .response-player-box audio {
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .response-quote {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 1.15rem 1.4rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .response-quote p {
+      color: #f1f5f9;
+      font-size: 1.05rem;
+      font-style: italic;
+      line-height: 1.55;
+    }
+
+    .audio-player-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       width: 100%;
-      height: 48px;
+      flex-wrap: wrap;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+    }
+
+    .audio-player-row audio {
+      flex: 1;
+      min-width: 240px;
+      height: 44px;
+    }
+
+    .transcript-box {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    /* Download Buttons */
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.15rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .download-btn.audio-btn {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .download-btn.audio-btn:hover {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #34d399;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .download-btn.json-btn {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+
+    .download-btn.json-btn:hover {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+
+    /* JSON Box */
+    .json-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .json-code-box {
+      background: #090d16;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      max-height: 420px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .json-key {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .json-string {
+      color: #86efac;
+    }
+
+    .json-number {
+      color: #fcd34d;
+    }
+
+    .json-boolean {
+      color: #c084fc;
+      font-weight: 600;
+    }
+
+    .json-null {
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    @media (max-width: 640px) {
+      .audio-player-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .audio-player-row audio {
+        width: 100%;
+      }
+      .json-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .download-btn {
+        width: 100%;
+      }
     }
 
     /* Collapsible Debug Accordion */
@@ -424,6 +578,7 @@
       border-radius: 10px;
       overflow: hidden;
       transition: all 0.2s ease;
+      margin-top: 0.5rem;
     }
 
     details.debug-box summary {
@@ -659,57 +814,118 @@
       <div id="alert-error" class="alert-error"></div>
     </div>
 
-    <!-- Output Section: Spoken Audio Response Player -->
+    <!-- Results Section: Audio Response, Transcription & Formatted JSON -->
     <div id="result-card" class="result-card">
       <div class="response-header">
         <div class="card-title" style="margin-bottom:0">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span>Spoken Audio Response</span>
+          <span>Processing Results</span>
         </div>
-        <span id="intent-badge" class="response-badge">booking</span>
+        <span id="intent-badge" class="response-badge">DETECTED</span>
       </div>
 
-      <!-- Prominent HTML5 Audio Player -->
-      <div class="response-player-box">
-        <audio id="response-audio-player" controls autoplay></audio>
-        <p id="response-text-preview" style="color: #cbd5e1; font-size: 1rem; font-style: italic; text-align: center;">
-          "Your response will play automatically."
-        </p>
-      </div>
+      <div class="result-section">
+        <!-- 1. Spoken Audio Response -->
+        <div>
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <span>Spoken Audio Response</span>
+          </div>
 
-      <!-- Collapsible Intermediate Debug Details -->
-      <details class="debug-box">
-        <summary>
-          <span>🔍 Intermediate Pipeline Details (Debug / Diagnostics)</span>
-          <span>▼</span>
-        </summary>
-        <div class="debug-content">
-          <div class="debug-row">
-            <span class="debug-label">1. Transcribed Customer Speech</span>
-            <div id="debug-transcript" class="debug-value">-</div>
+          <div class="response-quote">
+            <p id="response-text-preview">"Your response will play automatically."</p>
           </div>
-          <div class="debug-row">
-            <span class="debug-label">2. Classified Intent</span>
-            <div id="debug-intent" class="debug-value">-</div>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">3. Extracted Reservation Information</span>
-            <div id="debug-entities" class="slot-tags">-</div>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">4. Generated Customer Response Text</span>
-            <div id="debug-response-text" class="debug-value">-</div>
-          </div>
-          <div class="debug-row">
-            <span class="debug-label">5. Audio Response Output File</span>
-            <div id="debug-audio-file" class="debug-value">-</div>
+
+          <div class="audio-player-row">
+            <audio id="response-audio-player" controls autoplay></audio>
+            <a id="download-audio-btn" class="download-btn audio-btn" href="#" download="response_audio.mp3">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download Audio</span>
+            </a>
           </div>
         </div>
-      </details>
+
+        <!-- 2. Transcribed Customer Speech -->
+        <div>
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+            <span>Transcribed Customer Speech</span>
+          </div>
+          <div class="transcript-box">
+            <p id="result-transcript">-</p>
+          </div>
+        </div>
+
+        <!-- 3. Intent Classification JSON Output -->
+        <div>
+          <div class="json-header">
+            <div class="section-title" style="margin-bottom:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              <span>Intent Classification Result (JSON)</span>
+            </div>
+            <a id="download-json-btn" class="download-btn json-btn" href="#" download="intent_result.json">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Download JSON</span>
+            </a>
+          </div>
+          <pre class="json-code-box"><code id="result-json-code"></code></pre>
+        </div>
+
+        <!-- 4. Collapsible Intermediate Diagnostics -->
+        <details class="debug-box">
+          <summary>
+            <span>🔍 Intermediate Diagnostics & Slot Tags</span>
+            <span>▼</span>
+          </summary>
+          <div class="debug-content">
+            <div class="debug-row">
+              <span class="debug-label">Transcribed Speech</span>
+              <div id="debug-transcript" class="debug-value">-</div>
+            </div>
+            <div class="debug-row">
+              <span class="debug-label">Detected Intent</span>
+              <div id="debug-intent" class="debug-value">-</div>
+            </div>
+            <div class="debug-row">
+              <span class="debug-label">Extracted Reservation Information</span>
+              <div id="debug-entities" class="slot-tags">-</div>
+            </div>
+            <div class="debug-row">
+              <span class="debug-label">Generated Response Text</span>
+              <div id="debug-response-text" class="debug-value">-</div>
+            </div>
+            <div class="debug-row">
+              <span class="debug-label">Intent JSON Output File</span>
+              <div id="debug-json-file" class="debug-value">-</div>
+            </div>
+            <div class="debug-row">
+              <span class="debug-label">Audio Response Output File</span>
+              <div id="debug-audio-file" class="debug-value">-</div>
+            </div>
+          </div>
+        </details>
+      </div>
     </div>
   </div>
 
@@ -893,40 +1109,89 @@
       }
     }
 
+    function syntaxHighlightJson(jsonObj) {
+      if (jsonObj === null || jsonObj === undefined) return '';
+      const jsonStr = typeof jsonObj === 'string' ? jsonObj : JSON.stringify(jsonObj, null, 2);
+      const escaped = jsonStr
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
     function renderPipelineResult(data) {
       const resultCard = document.getElementById('result-card');
       resultCard.classList.add('show');
 
-      // 1. Audio Player
+      // 1. Audio Response & Audio Download Button
       const audioPlayer = document.getElementById('response-audio-player');
+      const audioDownloadBtn = document.getElementById('download-audio-btn');
       if (data.audio_output_url) {
         audioPlayer.src = data.audio_output_url + '?t=' + new Date().getTime();
         audioPlayer.play().catch(() => {});
+        audioDownloadBtn.href = data.audio_download_url || (data.audio_output_url + '?download=true');
+        audioDownloadBtn.setAttribute('download', data.audio_output_filename || 'response_audio.mp3');
+        audioDownloadBtn.style.display = 'inline-flex';
+      } else {
+        audioDownloadBtn.style.display = 'none';
       }
 
-      // 2. Response preview
-      document.getElementById('response-text-preview').textContent = `"${data.response_text}"`;
-      document.getElementById('intent-badge').textContent = (data.intent_classification?.intent || 'detected').toUpperCase();
+      // Response Quote & Intent Badge
+      document.getElementById('response-text-preview').textContent = data.response_text ? `"${data.response_text}"` : 'No response text available.';
+      document.getElementById('intent-badge').textContent = (data.intent_classification?.intent || 'DETECTED').toUpperCase();
 
-      // 3. Debug Details
+      // 2. Transcribed Customer Speech
+      const transcriptEl = document.getElementById('result-transcript');
+      transcriptEl.textContent = data.customer_text || '(No speech detected / silence)';
+
+      // 3. Formatted Intent JSON & JSON Download Button
+      const jsonCodeEl = document.getElementById('result-json-code');
+      const intentData = data.intent_classification || {};
+      jsonCodeEl.innerHTML = syntaxHighlightJson(intentData);
+
+      const jsonDownloadBtn = document.getElementById('download-json-btn');
+      if (data.json_download_url || data.json_output_url) {
+        jsonDownloadBtn.href = data.json_download_url || (data.json_output_url + '?download=true');
+        jsonDownloadBtn.setAttribute('download', data.json_output_filename || 'intent_result.json');
+        jsonDownloadBtn.style.display = 'inline-flex';
+      } else {
+        jsonDownloadBtn.style.display = 'none';
+      }
+
+      // 4. Debug Diagnostics Details
       document.getElementById('debug-transcript').textContent = data.customer_text || '(Silence / None)';
-      document.getElementById('debug-intent').textContent = data.intent_classification?.intent || 'unknown';
+      document.getElementById('debug-intent').textContent = intentData.intent || 'unknown';
       document.getElementById('debug-response-text').textContent = data.response_text || '-';
+      document.getElementById('debug-json-file').textContent = data.json_output_filename || '-';
       document.getElementById('debug-audio-file').textContent = data.audio_output_filename || '-';
 
-      // Entities
+      // Entities / Slot Tags
       const entitiesDiv = document.getElementById('debug-entities');
       entitiesDiv.innerHTML = '';
-      const intentData = data.intent_classification || {};
       const interestingKeys = ['party_size', 'date', 'time', 'food_preference', 'seating_preference', 'celebration_requirement'];
       let found = false;
       for (const k of interestingKeys) {
         const val = intentData[k];
-        if (val) {
+        if (val !== undefined && val !== null && val !== '') {
           found = true;
           const tag = document.createElement('div');
           tag.className = 'slot-tag';
-          tag.textContent = `${k.replace('_', ' ')}: ${typeof val === 'object' ? JSON.stringify(val) : val}`;
+          tag.textContent = `${k.replace(/_/g, ' ')}: ${typeof val === 'object' ? JSON.stringify(val) : val}`;
           entitiesDiv.appendChild(tag);
         }
       }

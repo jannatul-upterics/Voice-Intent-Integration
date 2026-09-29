@@ -1,310 +1,202 @@
 # Voice-Intent Integration
 
-A Python integration project that coordinates an audio-in, audio-out workflow for a restaurant reservation assistant, generating **both a structured JSON output file for intent classification and a synthesized audio response file**.
-
-This project acts as an orchestration layer. It accepts customer audio, coordinates transcription through a voice processing adapter, extracts customer intent and reservation details through an intent classification adapter, saves the classification output as a formatted `.json` file, drafts an appropriate spoken reply, and generates a playable `.mp3` audio response file.
+A lightweight integration project that connects an existing voice processing service and an intent classification service into an end-to-end customer voice reservation assistant.
 
 ---
 
-## Project Structure
+## 1. Project Overview
+
+We built this project to bridge two standalone modules:
+* `Audio-Conversation-Voice-Response` (voice processing: speech-to-text and text-to-speech)
+* `Customer-Intent-Classification` (intent detection and slot extraction)
+
+Instead of manually typing customer text or selecting form fields, a customer interacts entirely through voice. The pipeline accepts customer audio, transcribes the speech, identifies the customer's intent, drafts a conversational reply, generates a playable audio response, and saves a structured JSON file of the classification result.
+
+Both a command-line interface and a web application are included, allowing users to upload or record audio, review the transcription and formatted JSON, listen to the generated speech, and download both output files separately.
+
+---
+
+## 2. Features
+
+* **Audio file upload via web interface**: Drag and drop audio files, browse local files (`.wav`, `.mp3`, `.m4a`, `.ogg`, `.flac`), record live through your browser microphone, or pick from 10 sample customer recordings.
+* **Speech-to-text transcription**: Converts customer audio to text using the voice processing module.
+* **Intent classification**: Extracts intents (`booking`, `inquiry`, `modification`, `cancellation`) and reservation slots (`party_size`, `date`, `time`, `food_preference`, `summary`) without modifying classifier fields.
+* **JSON output file generation**: Automatically formats and saves the classification result as a separate `.json` file in the `intents/` folder.
+* **Spoken response generation**: Drafts a conversational answer based on the intent, translates dates and times into natural speech (e.g. converting `20:00` to "8 PM"), and prompts for missing details.
+* **Text-to-speech conversion**: Converts the drafted response into realistic speech saved as an `.mp3` file in `responses/`.
+* **In-browser audio playback**: Built-in audio player lets you listen to the response as soon as processing completes.
+* **Formatted JSON display**: Shows the intent classification output on the website in a readable view with syntax highlighting.
+* **Separate download buttons**: Dedicated buttons to download the generated `intent_result.json` file and the response `.mp3` audio file separately.
+
+---
+
+## 3. Project Structure
 
 ```text
 voice-intent-integration/
-├── main.py                          # Central orchestrator running the full audio-to-JSON and audio-to-speech pipeline
-├── voice_adapter.py                 # Adapter for speech-to-text and text-to-speech calls
-├── intent_adapter.py                # Adapter for intent detection and entity extraction
-├── response_generator.py            # Formulates spoken conversational response text
-├── sanitizer.py                     # Redacts sensitive tokens, API keys, and local file paths
-├── config.py                        # Path discovery, environment loading, and settings
-├── app.py                           # Streamlit web interface with microphone recording and output inspection
-├── web_app.py                       # Flask web server and REST API
-├── interface.py                     # Command-line launcher for UI and CLI tasks
-├── run_e2e_audio_tests.py           # Standalone runner for the 10 customer audio test scenarios
-├── requirements.txt                 # Python package dependencies for this project
-├── .env.example                     # Template for environment variables
-├── .gitignore                       # Git ignore rules for virtual environments, keys, and outputs
-├── audio/                           # Audio input directory
-│   ├── sample_customer_audio.wav    # Default sample customer recording (.wav)
-│   ├── README.md                    # Folder description
-│   ├── .gitkeep                     # Keeps directory tracked in version control
-│   ├── uploads/                     # Temporary directory for user uploads and mic recordings
-│   └── test_cases/                  # 10 realistic customer audio recordings (.mp3)
-│       ├── 01_greeting.mp3
-│       ├── 02_new_booking.mp3
-│       ├── 03_booking_guest_count.mp3
-│       ├── 04_booking_date_time.mp3
-│       ├── 05_inquiry.mp3
-│       ├── 06_modification.mp3
-│       ├── 07_cancellation.mp3
-│       ├── 08_incomplete_request.mp3
-│       ├── 09_unclear_request.mp3
-│       └── 10_unsupported_request.mp3
-├── intents/                         # Output directory for saved intent classification JSON files
-│   ├── .gitkeep                     # Keeps directory tracked in version control
-│   └── *_intent_*.json              # Formatted JSON output files containing classifier fields
-├── responses/                       # Output directory for generated response audio files
-│   ├── README.md                    # Folder description
-│   ├── .gitkeep                     # Keeps directory tracked in version control
-│   ├── response_mock.mp3            # Lightweight placeholder audio for mock/offline testing
-│   └── *.mp3                        # Synthesized response audio files (.mp3)
-├── templates/                       # Frontend HTML templates
-│   └── index.html                   # Single-page interface for the Flask web app
-└── tests/                           # Unit, boundary, interface, output, and end-to-end tests
-    ├── __init__.py                  # Test package initialization
-    ├── conftest.py                  # Pytest configuration and calendar reference fixture
-    ├── test_boundary_1_voice_to_text.py
-    ├── test_boundary_2_text_to_intent.py
-    ├── test_boundary_3_intent_to_response.py
-    ├── test_boundary_4_response_to_audio.py
-    ├── test_boundary_5_system_integrity.py
-    ├── test_e2e_audio_pipeline.py
-    ├── test_error_handling.py
-    ├── test_integration.py
-    ├── test_intent_integration.py
-    ├── test_interface.py
-    ├── test_json_and_audio_output.py  # Tests dual JSON and audio response generation
-    ├── test_response_generation.py
-    ├── test_tts_integration.py
-    └── test_voice_integration.py
+├── main.py                  # Pipeline orchestrator and command-line entry point
+├── voice_adapter.py         # Adapter for speech-to-text (STT) and text-to-speech (TTS)
+├── intent_adapter.py        # Adapter for intent classification and entity extraction
+├── response_generator.py    # Formulates conversational reply text and follow-up prompts
+├── sanitizer.py             # Redacts API keys and internal file paths in logs
+├── config.py                # Resolves paths, working directories, and settings
+├── web_app.py               # Flask server and REST API endpoints
+├── app.py                   # Alternative Streamlit web interface
+├── interface.py             # CLI launcher for web apps and terminal processing
+├── run_e2e_audio_tests.py   # Standalone runner for the 10 customer audio test cases
+├── requirements.txt         # Dependencies for this integration project
+├── .env.example             # Example environment file template
+├── audio/                   # Audio inputs
+│   ├── sample_customer_audio.wav
+│   ├── uploads/             # Temporary storage for uploads and mic recordings
+│   └── test_cases/          # 10 realistic customer test recordings (.mp3)
+├── intents/                 # Output folder for generated intent JSON files
+├── responses/               # Output folder for generated response MP3 files
+├── templates/
+│   └── index.html           # Web interface template with player, JSON viewer, and downloads
+└── tests/                   # Automated test suite (unit, boundary, interface, e2e)
 ```
 
----
+### Key Files Explained
 
-## File Descriptions
-
-### Core Integration Modules
-
-* **`main.py`**  
-  Contains the `VoiceIntentOrchestrator` class, which manages the pipeline from start to finish. It takes an input audio file, coordinates speech-to-text, intent classification, saving the classification JSON file, response text generation, and text-to-speech synthesis. It returns a dictionary containing the transcription, intent data, path to the saved intent `.json` file (`json_output`), customer response text, and path to the synthesized `.mp3` audio file (`audio_output`). It also provides a direct command-line interface with detailed stage logging.
-
-* **`voice_adapter.py`**  
-  Contains `VoiceProcessingAdapter`. It validates incoming audio files (existence, supported extension, and non-empty file size) and delegates speech-to-text and text-to-speech requests to external voice services. It also includes an offline mock mode for testing without external service calls.
-
-* **`intent_adapter.py`**  
-  Contains `IntentClassificationAdapter`. It receives customer text, validates that it is non-empty, and interfaces with the intent classification subsystem. It preserves all classifier fields, returning a standardized dictionary containing `intent`, `party_size`, `date`, `time`, `food_preference`, `summary`, and any auxiliary reservation attributes.
-
-* **`response_generator.py`**  
-  Contains `ResponseGenerator`. It receives the structured intent dictionary and generates natural, spoken conversational text for the customer. It handles table bookings, dining inquiries, reservation modifications, cancellations, and unclear requests. It translates raw dates and times into conversational speech (such as converting `20:00` into "8 PM"), detects missing parameters (such as guest count or time) to prompt the user with specific follow-up questions, and generates clean fallback messages if an error occurs.
-
-* **`sanitizer.py`**  
-  Contains sanitization helper functions (`sanitize_text`, `mask_api_key`, `sanitize_customer_message`). It redacts sensitive tokens (such as `gsk_...` API keys or Bearer tokens) and local filesystem paths from logs and customer messages, ensuring that technical error details and credentials never appear in customer responses.
-
-* **`config.py`**  
-  Manages configuration settings, working directories (`AUDIO_DIR`, `RESPONSES_DIR`, `INTENTS_DIR`), supported audio formats (`.wav`, `.mp3`, `.m4a`, `.ogg`, `.flac`), and logging formats. It resolves sibling project paths and loads environment variables from local or parent `.env` files.
-
-### User Interfaces and Launchers
-
-* **`app.py`**  
-  A Streamlit web application providing an audio-only user interface. Users can record speech with a browser microphone, upload an audio file, or pick from pre-recorded customer scenarios. It runs the audio through `VoiceIntentOrchestrator`, plays back the resulting audio response, and provides a collapsible debug drawer showing intermediate transcription, extracted slots, and a download button for the generated intent JSON file.
-
-* **`web_app.py`**  
-  A lightweight Flask web server. It serves `templates/index.html` and exposes REST endpoints:
-  * `POST /api/process_audio`: Accepts multipart audio file uploads or microphone recordings, runs the pipeline, and returns playback URLs for both the response audio and intent JSON.
-  * `POST /api/process_sample`: Runs the pipeline against one of the pre-recorded audio test cases.
-  * `GET /api/samples`: Returns the list of available audio test cases.
-  * `GET /api/audio/<filename>`: Streams response audio files for browser playback.
-  * `GET /api/intent/<filename>`: Serves generated intent classification JSON files.
-
-* **`templates/index.html`**  
-  The frontend interface for `web_app.py`. Built with HTML5, CSS, and JavaScript. Supports browser microphone recording via the `MediaRecorder` API, drag-and-drop file upload, quick-select test scenarios, an audio player for playback, and an expandable diagnostics drawer.
-
-* **`interface.py`**  
-  A unified command-line entry point. Accepts flags to launch either web interface (`--streamlit` or `--web`) or process a local audio file directly via the terminal (`--audio <path>`).
-
-* **`run_e2e_audio_tests.py`**  
-  A standalone test runner script that executes the 10 customer audio test scenarios in `audio/test_cases/` and prints a stage-by-stage pass/fail report to the console.
-
-### Configuration and Setup Files
-
-* **`requirements.txt`**  
-  Specifies direct dependencies needed by the integration layer: `python-dotenv`, `flask`, and `streamlit`.
-
-* **`.env.example`**  
-  Template configuration outlining required and optional variables (`GROQ_API_KEY`, `VOICE_PROCESSING_DIR`, `INTENT_CLASSIFICATION_DIR`, `LOG_LEVEL`).
-
-* **`.gitignore`**  
-  Excludes Python bytecode caches, virtual environments, `.env` files, temporary user uploads (`audio/uploads/*`), generated response audio files (`responses/*.mp3`), and generated intent JSON files (`intents/*.json`).
-
-### Audio and Storage Folders
-
-* **`audio/`**  
-  Working directory for incoming audio files.
-  * `sample_customer_audio.wav`: A default customer audio recording used for quick testing.
-  * `uploads/`: Temporary workspace for recordings and files submitted via the web interfaces.
-  * `test_cases/`: Contains 10 realistic customer audio recordings covering greetings, new bookings, guest count specifications, date/time specifications, inquiries, modifications, cancellations, incomplete requests, unclear speech, and unsupported requests.
-
-* **`intents/`**  
-  Output directory where intent classification result `.json` files are saved. Each processed audio input generates a separate, uniquely named JSON file.
-
-* **`responses/`**  
-  Destination directory where synthesized `.mp3` audio response files are saved. Contains `response_mock.mp3` for offline testing.
+* **`main.py`**: The central coordinator (`VoiceIntentOrchestrator`). Manages audio validation, transcription, intent classification, JSON saving, response generation, and audio synthesis.
+* **`voice_adapter.py`**: Interacts with the voice processing service for speech-to-text and text-to-speech. Includes an offline mock mode for testing without external APIs.
+* **`intent_adapter.py`**: Passes customer text to the classifier and returns a normalized dictionary of intents and slots.
+* **`response_generator.py`**: Generates friendly conversational text based on the detected intent and asks follow-up questions if required details are missing.
+* **`sanitizer.py`**: Cleans logs and user-facing messages by masking API keys and local file paths.
+* **`config.py`**: Auto-detects sibling project folders, loads `.env` variables, and sets up working directories.
+* **`web_app.py`**: Runs the Flask web application and exposes endpoints for processing audio and serving download files securely.
+* **`templates/index.html`**: Single-page frontend with microphone recording, drag-and-drop file upload, audio player, syntax-highlighted JSON viewer, and download buttons.
 
 ---
 
-## Workflow
+## 4. How It Works
 
-The files in this project interact in a clear, sequential order:
+Here is the step-by-step process when an audio file is submitted:
 
 ```text
-Customer Audio (.wav / .mp3)
-           │
-           ▼
-     [ config.py ] ────────── Validates path and format settings
-           │
-           ▼
-  [ voice_adapter.py ] ────── Checks file validity; converts speech to text (STT)
-           │
-           ▼
-  [ intent_adapter.py ] ───── Receives text; extracts intent and slot entities
-           │
-           ▼
-      [ intents/ ] ────────── Saves intent classification result (.json)
-           │
-           ▼
-[ response_generator.py ] ── Formulates spoken response text and prompts for missing slots
-           │
-           ▼
-    [ sanitizer.py ] ──────── Strips API keys and internal system paths
-           │
-           ▼
-  [ voice_adapter.py ] ────── Converts response text into spoken audio (.mp3 via TTS)
-           │
-           ▼
-     [ responses/ ] ───────── Saves synthesized audio response for playback
+Customer Audio (Upload / Mic / Test Case)
+       │
+       ▼
+1. Speech-to-Text (Transcribes customer audio to text)
+       │
+       ▼
+2. Intent Classification (Extracts intent and reservation parameters)
+       │
+       ▼
+3. Save Intent JSON (Writes formatted classification result to intents/)
+       │
+       ▼
+4. Response Generation (Drafts spoken reply text and prompts for missing slots)
+       │
+       ▼
+5. Text-to-Speech (Synthesizes reply text into spoken audio in responses/)
+       │
+       ▼
+6. Web Presentation (Displays transcript, syntax-highlighted JSON & audio player)
+       │
+       ▼
+7. Separate Downloads (User can download intent_result.json and response_audio.mp3)
 ```
 
-### Execution Stages
-
-1. **Input Ingestion**: Customer audio is provided via the CLI, uploaded through `web_app.py`, or recorded via `app.py`.
-2. **Audio Validation & Transcription (STT)**: `main.py` passes the audio file to `voice_adapter.py`. The adapter checks that the file exists, has a supported format, and is not 0 bytes. It delegates transcription and returns the customer speech text.
-3. **Intent Classification**: `main.py` sends the transcribed text to `intent_adapter.py`. The adapter invokes classification and extracts slots (`party_size`, `date`, `time`, `food_preference`, `summary`, etc.).
-4. **Save Intent JSON**: `main.py` formats the full intent classification dictionary and saves it as an indented `.json` file inside `intents/` with a unique filename (`<audio_stem>_intent_<timestamp>_<uuid>.json`).
-5. **Response Formulation**: `main.py` passes the intent dictionary and transcribed text to `response_generator.py`. The generator constructs a customer-facing reply, confirming reservation details or asking follow-up questions for any missing parameters.
-6. **Text-to-Speech (TTS) Synthesis**: `main.py` sends the response text to `voice_adapter.py`, which synthesizes spoken audio and saves it as a playable `.mp3` file inside `responses/`.
-7. **Delivery**: The system outputs the paths to both the generated JSON file and the generated audio response file.
-
----
-
-## Output Files (JSON & Audio)
-
-For every valid audio input, the pipeline generates two distinct output files:
-
-### 1. Intent Classification JSON Output (`intents/`)
-
-The classification result is saved as a readable, indented `.json` file inside the `intents/` directory.
-
-* **File Naming**: Uniquely generated per run to avoid overwriting earlier outputs:
-  ```text
-  intents/<audio_stem>_intent_<timestamp>_<unique_id>.json
-  ```
-  *(Example: `intents/02_new_booking_intent_20260928_195000_a1b2c3.json`)*
-* **Preserved Schema**: All fields returned by the classifier are saved verbatim without altering or removing keys:
-  ```json
-  {
-    "intent": "booking",
-    "party_size": 4,
-    "date": "2026-10-02",
-    "time": "20:00",
-    "food_preference": {
-      "vegetarian": 1
-    },
-    "summary": "Customer wants to book a table for 4 people on Friday at 8 PM.",
-    "seating_preference": {
-      "window": 4
-    }
-  }
-  ```
-* **Failure Safety**: If the audio file is missing, empty, or unparseable, or if speech transcription fails, no misleading or empty JSON file is written to disk.
-
-### 2. Audio Response File (`responses/`)
-
-The synthesized spoken reply is saved as an audio file inside the `responses/` directory.
-
-* **File Format**: Standard `.mp3` audio format matching the voice adapter.
-* **Content**: Contains the assistant's spoken conversational reply (not the input audio).
-* **Verification**: The pipeline verifies that the generated audio file exists, is playable, and has a valid non-zero size before completing.
-
-### Inspecting Outputs
-
-* **Terminal / CLI**: Running `main.py` prints the resolved filesystem paths for both outputs:
-  ```text
-  >> Intent JSON output  : D:\...\voice-intent-integration\intents\sample_intent_...json
-  >> Audio response ready : D:\...\voice-intent-integration\responses\resp_...mp3
-  ```
-* **Streamlit UI (`app.py`)**: The audio player plays the spoken response automatically. The "Intermediate Pipeline Details" expander displays the detected intent, extracted slots, and provides a direct download button for the generated intent `.json` file.
-* **Flask Web API (`web_app.py`)**: API responses include `json_output`, `json_output_url` (`/api/intent/<filename>`), and `audio_output_url` (`/api/audio/<filename>`).
+1. **Upload audio**: The user uploads an audio file, records speech with a microphone, or clicks a pre-recorded test scenario.
+2. **Transcribe speech**: `voice_adapter.py` validates the audio format and converts customer speech into text.
+3. **Classify intent**: `intent_adapter.py` passes the transcript to the intent classifier to extract the intent and details (party size, date, time, food preference, summary).
+4. **Save JSON file**: `main.py` saves the exact classification result as a `.json` file in `intents/`.
+5. **Draft response**: `response_generator.py` writes an appropriate customer reply. If key reservation details are missing (e.g., party size or time), it politely asks for them.
+6. **Synthesize speech**: `voice_adapter.py` converts the response text into speech and saves it as an `.mp3` file in `responses/`.
+7. **Display results**: The web app displays the transcribed text, renders the JSON output with color highlighting, and loads the audio player.
+8. **Download files**: The user can click **Download JSON** to get `intent_result.json` and **Download Audio** to get the `.mp3` file.
 
 ---
 
-## Installation and Setup
+## 5. Environment Setup
+
+A pre-configured `.env` file is **already provided with this project**.
+
+Before running the application, make sure the provided `.env` file is placed directly inside the **project root directory (`voice-intent-integration/`)**.
+
+```text
+voice-intent-integration/
+├── .env      <-- Place the provided .env file here
+├── main.py
+├── ...
+```
+
+The `.env` file contains the required environment variables. Do not include actual API keys or secret values in the README.
+
+**Important:**
+
+* Do not create a new `.env` file if the provided one is available.
+* Do not commit the `.env` file to GitHub because it may contain API keys or other sensitive information.
+* Do not expose or copy actual API keys or secret values into the README.
+
+---
+
+## 6. Installation and Setup
+
+### Prerequisites
+
+* Python 3.10 or higher
+* The two sibling project folders located in the parent directory:
+  * `Audio-Conversation-Voice-Response` (or `voice-processing`)
+  * `Customer-Intent-Classification` (or `intent-classification`)
 
 ### 1. Install Dependencies
 
-Install the requirements in your Python environment:
+Install the packages needed by the integration project:
 
 ```bash
-cd "Voice-Intent-Integration"
+cd voice-intent-integration
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
+### 2. Verify Configuration
 
-Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and configure your settings:
-
-```ini
-# Groq API Key (used for transcription and intent extraction)
-GROQ_API_KEY=your_groq_api_key_here
-
-# Sibling Project Path Overrides (optional; auto-discovered by default)
-# VOICE_PROCESSING_DIR="../Audio-Conversation-Voice-Response"
-# INTENT_CLASSIFICATION_DIR="../Customer-Intent-Classification"
-
-# Logging Level (DEBUG, INFO, WARNING, ERROR)
-LOG_LEVEL=INFO
-```
-
-> **Note:** If `GROQ_API_KEY` is already defined in a `.env` file in either sibling project directory, `config.py` discovers and loads it automatically.
-
-To verify that paths and environment variables are detected correctly:
+Run the configuration check to confirm that your `.env` file and sibling projects are detected:
 
 ```bash
 python main.py --check-env
 ```
 
+If everything is configured correctly, it will report that directories and API keys are ready.
+
 ---
 
-## Usage
+## 7. Running the Application
 
-### 1. Command Line Interface
+### 1. Web Application (Flask - Recommended)
 
-Process a customer audio file directly:
+Start the web server:
 
 ```bash
-# Process a local audio file (generates both JSON and Audio outputs)
-python main.py audio/sample_customer_audio.wav
+python web_app.py
+```
+*(You can also use `python interface.py --web`)*
 
-# Process a pre-recorded test scenario
-python main.py audio/test_cases/02_new_booking.mp3
-
-# Specify custom output paths for both audio and intent JSON
-python main.py audio/sample_customer_audio.wav -o responses/custom_reply.mp3 -j intents/custom_intent.json
-
-# Skip audio synthesis (text response + intent JSON only)
-python main.py audio/sample_customer_audio.wav --no-tts
-
-# Skip saving the intent JSON file
-python main.py audio/sample_customer_audio.wav --no-json
+Open your browser and navigate to:
+```text
+http://127.0.0.1:5000
 ```
 
-### 2. Streamlit Web Interface
+**How to use the website:**
+1. Choose how you want to provide audio:
+   * **Record Voice**: Click the microphone button, speak your request, and click stop.
+   * **Upload Audio File**: Drag and drop an audio file (`.wav`, `.mp3`, `.m4a`, etc.) or click to browse.
+   * **Customer Scenarios**: Click any of the 10 quick-select scenario chips (e.g. "2. New Booking", "5. Dining Inquiry").
+2. Click **Process Customer Audio**.
+3. View and play results:
+   * The audio player will automatically load and play the assistant's spoken reply.
+   * Read the customer's transcribed speech directly below the player.
+   * Inspect the formatted intent classification JSON in the code viewer.
+   * Use the collapsible diagnostics drawer to view extracted reservation tags and status details.
+4. Download results:
+   * Click **Download Audio** to save the generated `.mp3` file.
+   * Click **Download JSON** to save the generated `intent_result.json` file.
 
-To run the interactive browser interface with microphone recording, playback, and JSON inspection:
+### 2. Streamlit Web Application (Alternative)
+
+If you prefer using Streamlit:
 
 ```bash
 python -m streamlit run app.py
@@ -313,69 +205,126 @@ python -m streamlit run app.py
 
 Open `http://localhost:8501` in your browser.
 
-### 3. Flask Web Application
+### 3. Command Line Interface (CLI)
 
-To run the lightweight web server with REST endpoints:
-
-```bash
-python web_app.py
-```
-*(Or via `python interface.py --web`)*
-
-Open `http://127.0.0.1:5000` in your browser.
-
-### 4. Text Simulation Mode
-
-Run intent classification, save the JSON output, generate response text, and synthesize speech from customer text directly:
+You can also run audio files directly in your terminal:
 
 ```bash
+# Process a sample customer audio file
+python main.py audio/sample_customer_audio.wav
+
+# Process a pre-recorded test scenario
+python main.py audio/test_cases/02_new_booking.mp3
+
+# Specify custom output paths for audio and JSON
+python main.py audio/sample_customer_audio.wav -o responses/custom_reply.mp3 -j intents/custom_intent.json
+
+# Skip speech synthesis (transcription and JSON output only)
+python main.py audio/sample_customer_audio.wav --no-tts
+
+# Test with direct text simulation (bypassing speech-to-text)
 python main.py --text "I would like to reserve a table for four tonight at 8 PM"
-```
 
-### 5. Offline Mock Mode
-
-Run the pipeline in offline mock mode without making external API calls:
-
-```bash
+# Run in offline mock mode (no external API calls)
 python main.py audio/sample_customer_audio.wav --mock
 ```
 
 ---
 
-## Testing
+## 8. Output Files
 
-The project includes unit tests, boundary tests, error-handling tests, interface tests, output tests, and end-to-end audio pipeline tests inside the `tests/` directory.
+Every successful run produces two output files saved to disk:
+
+### 1. Intent Classification JSON File (`intents/`)
+
+* **Saved to**: `intents/<audio_stem>_intent_<timestamp>_<uuid>.json`
+* **Format**: Formatted UTF-8 JSON.
+* **Content**: The complete dictionary returned by the intent classifier, preserving all keys:
+  ```json
+  {
+    "intent": "booking",
+    "party_size": 4,
+    "date": "2026-10-02",
+    "time": "20:00",
+    "food_preference": null,
+    "summary": "Customer wants to book a table for 4 people on Friday at 8 PM."
+  }
+  ```
+* **Safety check**: If transcription fails or audio is empty, no misleading JSON file is generated.
+
+### 2. Audio Response File (`responses/`)
+
+* **Saved to**: `responses/resp_<uuid>.mp3` (or `responses/ui_resp_<uuid>.mp3` from the web app)
+* **Format**: Standard `.mp3` audio.
+* **Content**: The synthesized voice response generated from the assistant's reply text.
+* **Safety check**: Verified to exist and have a valid non-zero size before completion.
+
+### How Downloads Work
+
+* **Download JSON**: Clicking the button calls `/api/intent/<filename>?download=true&filename=intent_result.json`. The server validates that the file is inside the safe `intents/` directory and sends the actual file with attachment headers so your browser saves it as `intent_result.json`.
+* **Download Audio**: Clicking the button calls `/api/audio/<filename>?download=true&filename=<filename>`, sending the actual `.mp3` file generated for that run.
+
+Both download routes strictly guard against path traversal attempts (`403 Forbidden` for unauthorized paths).
+
+---
+
+## 9. Testing
+
+The project has a comprehensive automated test suite inside the `tests/` directory covering unit tests, boundaries, error handling, web interface features, dual output generation, and end-to-end audio pipeline execution.
 
 ### Run All Tests
 
-To run the entire test suite using `pytest`:
+To run the complete test suite:
 
 ```bash
-pytest -v
+python -m pytest tests/ -v
 ```
 
-Or using Python's `unittest` module:
+**Actual test output:**
+```text
+======================== 136 passed, 1 warning in 104.42s ========================
+```
+All **136 tests passed** with 0 failures across all 14 test modules.
+
+### Run Web Interface & Download Tests
+
+Tests the web endpoints, response rendering, separate download buttons, attachment headers, and path traversal security:
 
 ```bash
-python -m unittest discover tests
+python -m pytest tests/test_interface.py -v
 ```
 
-### Run Dual JSON & Audio Output Tests
+**Actual test output:**
+```text
+============================= 12 passed in 7.17s =============================
+```
 
-Verify that both the JSON output file and audio response file are generated correctly for booking, inquiry, modification, cancellation, and invalid inputs:
+### Run Dual Output Tests
+
+Verifies that both the JSON file and audio file are generated across intents, custom paths, and failure modes:
 
 ```bash
-pytest tests/test_json_and_audio_output.py -v
+python -m pytest tests/test_json_and_audio_output.py -v
 ```
 
-### Run the End-to-End Audio Pipeline Tests
+**Actual test output:**
+```text
+============================= 12 passed in 10.15s =============================
+```
 
-Run all 10 customer audio test cases through the complete audio-to-audio pipeline:
+### Run End-to-End Audio Pipeline Tests
+
+Executes all 10 realistic customer audio recordings through the entire pipeline:
 
 ```bash
 python run_e2e_audio_tests.py
 ```
-*(Or via `pytest tests/test_e2e_audio_pipeline.py -v`)*
+*(Or via `python -m pytest tests/test_e2e_audio_pipeline.py -v`)*
+
+**Actual test output:**
+```text
+All 10 customer audio test scenarios passed successfully.
+```
 
 ### Run Specific Boundary Tests
 
@@ -386,15 +335,15 @@ python -m unittest tests/test_boundary_1_voice_to_text.py
 # Test text validation and intent classification boundary
 python -m unittest tests/test_boundary_2_text_to_intent.py
 
-# Test response generation logic and slot handling
+# Test response generation logic and missing slot prompts
 python -m unittest tests/test_boundary_3_intent_to_response.py
 
-# Test text-to-speech synthesis and audio output
+# Test speech synthesis and response audio output
 python -m unittest tests/test_boundary_4_response_to_audio.py
 
-# Test error handling across all failure modes
-python -m unittest tests/test_error_handling.py
+# Test system integrity and sibling project independence
+python -m unittest tests/test_boundary_5_system_integrity.py
 
-# Test web interface routes, upload handling, and audio serving
-python -m unittest tests/test_interface.py
+# Test error handling and sensitive token sanitization
+python -m unittest tests/test_error_handling.py
 ```

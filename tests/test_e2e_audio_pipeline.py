@@ -84,9 +84,18 @@ class TestEndToEndAudioPipeline(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._orig_ref_date = os.environ.get("REFERENCE_DATE")
+        os.environ["REFERENCE_DATE"] = "2026-09-25"
         cls.orchestrator = VoiceIntentOrchestrator(mock_mode=False)
         cls.test_cases_dir = config.AUDIO_DIR / "test_cases"
         cls.reports = []
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._orig_ref_date is not None:
+            os.environ["REFERENCE_DATE"] = cls._orig_ref_date
+        else:
+            os.environ.pop("REFERENCE_DATE", None)
 
     def _execute_e2e_audio_case(
         self,

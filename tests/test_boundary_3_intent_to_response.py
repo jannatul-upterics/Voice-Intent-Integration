@@ -8,6 +8,7 @@ Tests the third integration boundary:
 - Verifying handling of missing slots, invalid values, unclear speech, and generation exceptions.
 """
 
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -23,6 +24,18 @@ from response_generator import ResponseGenerator
 
 class TestBoundary3IntentToResponse(unittest.TestCase):
     """Integration Boundary 3: Intent -> response generation -> response text."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._orig_ref = os.environ.get("REFERENCE_DATE")
+        os.environ["REFERENCE_DATE"] = "2026-09-25"
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._orig_ref is not None:
+            os.environ["REFERENCE_DATE"] = cls._orig_ref
+        else:
+            os.environ.pop("REFERENCE_DATE", None)
 
     def setUp(self):
         self.generator = ResponseGenerator()

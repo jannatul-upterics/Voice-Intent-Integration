@@ -143,60 +143,106 @@ def process_sample():
     return _build_response_payload(result)
 
 
+def _is_safe_path(base_dir: Path, target_path: Path) -> bool:
+    """Ensure target path resides strictly inside the base directory."""
+    try:
+        target_path.resolve().relative_to(base_dir.resolve())
+        return True
+    except (ValueError, RuntimeError):
+        return False
+
+
 @app.route("/api/audio/<path:filename>", methods=["GET"])
 def serve_audio(filename: str):
     """
     Serves generated response audio files or input samples.
+    Supports ?download=true for direct attachment downloads.
     """
     is_sample = request.args.get("sample", "false").lower() == "true"
+    as_attachment = request.args.get("download", "false").lower() == "true"
+
     if is_sample:
         target_path = TEST_CASES_DIR / filename
+        base_dir = TEST_CASES_DIR
         if not target_path.exists():
             target_path = config.AUDIO_DIR / filename
+            base_dir = config.AUDIO_DIR
     else:
         target_path = config.RESPONSES_DIR / filename
+        base_dir = config.RESPONSES_DIR
         if not target_path.exists():
             target_path = UPLOADS_DIR / filename
+            base_dir = UPLOADS_DIR
+
+    # Prevent directory traversal attacks
+    if not _is_safe_path(base_dir, target_path):
+        logger.warning("Directory traversal attempt blocked in serve_audio: %s", filename)
+        return jsonify({"error": "Access denied"}), 403
 
     if not target_path.exists():
         return jsonify({"error": "Audio file not found"}), 404
 
     mimetype = "audio/mpeg" if target_path.suffix.lower() == ".mp3" else "audio/wav"
-    return send_file(str(target_path), mimetype=mimetype)
+    download_name = request.args.get("filename") or target_path.name
+    return send_file(
+        str(target_path),
+        mimetype=mimetype,
+        as_attachment=as_attachment,
+        download_name=download_name
+    )
 
 
 @app.route("/api/intent/<path:filename>", methods=["GET"])
 def serve_intent_json(filename: str):
     """
     Serves generated intent classification JSON files.
+    Supports ?download=true for direct attachment downloads.
     """
+    as_attachment = request.args.get("download", "false").lower() == "true"
     target_path = config.INTENTS_DIR / filename
+
+    # Prevent directory traversal attacks
+    if not _is_safe_path(config.INTENTS_DIR, target_path):
+        logger.warning("Directory traversal attempt blocked in serve_intent_json: %s", filename)
+        return jsonify({"error": "Access denied"}), 403
+
     if not target_path.exists():
         return jsonify({"error": "Intent JSON file not found"}), 404
-    return send_file(str(target_path), mimetype="application/json")
+
+    download_name = request.args.get("filename") or "intent_result.json"
+    return send_file(
+        str(target_path),
+        mimetype="application/json",
+        as_attachment=as_attachment,
+        download_name=download_name
+    )
 
 
 def _build_response_payload(result: Dict[str, Any]):
-    """Constructs the JSON payload with audio playback URL, JSON output URL, and diagnostics."""
+    """Constructs the JSON payload with audio playback URL, JSON output URL, and download links."""
     audio_output = result.get("audio_output")
     audio_output_url = None
     audio_output_filename = None
+    audio_download_url = None
 
     if audio_output:
         p = Path(audio_output)
         if p.exists() and p.stat().st_size > 0:
             audio_output_filename = p.name
             audio_output_url = f"/api/audio/{p.name}"
+            audio_download_url = f"/api/audio/{p.name}?download=true&filename={p.name}"
 
     json_output = result.get("json_output")
     json_output_url = None
     json_output_filename = None
+    json_download_url = None
 
     if json_output:
         jp = Path(json_output)
         if jp.exists() and jp.stat().st_size > 0:
             json_output_filename = jp.name
             json_output_url = f"/api/intent/{jp.name}"
+            json_download_url = f"/api/intent/{jp.name}?download=true&filename=intent_result.json"
 
     status_code = 200 if result.get("status") in ("success", "partial_failure") else 400
 
@@ -207,9 +253,11 @@ def _build_response_payload(result: Dict[str, Any]):
         "json_output": json_output,
         "json_output_filename": json_output_filename,
         "json_output_url": json_output_url,
+        "json_download_url": json_download_url,
         "response_text": result.get("response_text") or "",
         "audio_output_filename": audio_output_filename,
         "audio_output_url": audio_output_url,
+        "audio_download_url": audio_download_url,
         "tts_failed": result.get("tts_failed", False),
         "customer_facing_message": result.get("customer_facing_message")
     }), status_code
